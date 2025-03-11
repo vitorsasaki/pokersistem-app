@@ -120,6 +120,7 @@ export default {
             this.resultado = { ...this.resultadoEdit }
           } else {
             this.limparFormulario()
+            await this.carregarUltimaPosicao()
           }
 
           await Promise.all([
@@ -200,6 +201,24 @@ export default {
     },
     getJogadorLabel(jogador) {
       return `ID: ${jogador.id} - ${jogador.nome} (${jogador.nomeReal})`
+    },
+    async carregarUltimaPosicao() {
+      try {
+        const response = await axios.get('/resultadoTorneio')
+        if (response.data && Array.isArray(response.data)) {
+          const resultados = response.data
+          if (resultados.length > 0) {
+            // Encontra a maior posição entre todos os resultados
+            const maiorPosicao = Math.max(...resultados.map(r => r.posicao))
+            this.resultado.posicao = maiorPosicao + 1
+          } else {
+            this.resultado.posicao = 1
+          }
+        }
+      } catch (error) {
+        console.error('Erro ao carregar última posição:', error)
+        this.resultado.posicao = 1
+      }
     }
   }
 }

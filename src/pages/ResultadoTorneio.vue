@@ -22,6 +22,52 @@
           </div>
 
           <div v-else>          
+            <!-- Filtros -->
+            <div class="row mb-4">
+              <div class="col-md-3">
+                <div class="form-group">
+                  <label>Filtrar por Torneio ID</label>
+                  <input
+                    type="number"
+                    class="form-control"
+                    v-model="filtros.torneioId"
+                    placeholder="Digite o ID do torneio"
+                  />
+                </div>
+              </div>
+              <div class="col-md-3">
+                <div class="form-group">
+                  <label>Mês</label>
+                  <select class="form-control" v-model="filtros.mes">
+                    <option value="">Todos</option>
+                    <option v-for="(mes, index) in nomesMeses" :key="index" :value="index + 1">
+                      {{ mes }}
+                    </option>
+                  </select>
+                </div>
+              </div>
+              <div class="col-md-3">
+                <div class="form-group">
+                  <label>Ano</label>
+                  <select class="form-control" v-model="filtros.ano">
+                    <option value="">Todos</option>
+                    <option v-for="ano in anos" :key="ano" :value="ano">
+                      {{ ano }}
+                    </option>
+                  </select>
+                </div>
+              </div>
+              <div class="col-md-3">
+                <div class="form-group">
+                  <label>Ponto Bônus</label>
+                  <select class="form-control" v-model="filtros.pontoBonus">
+                    <option value="">Todos</option>
+                    <option value="SIM">Sim</option>
+                    <option value="NAO">Não</option>
+                  </select>
+                </div>
+              </div>
+            </div>
 
             <div class="table-responsive">
               <table class="table">
@@ -126,15 +172,62 @@ export default {
       paginaAtual: 1,
       itensPorPagina: 10,
       totalItens: 0,
-      filtro: {
-        campo: 'jogador',
-        valor: ''
-      },
       showModal: false,
-      resultadoSelecionado: null
+      resultadoSelecionado: null,
+      filtros: {
+        torneioId: '',
+        mes: '',
+        ano: '',
+        pontoBonus: ''
+      },
+      nomesMeses: [
+        'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+        'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
+      ]
     }
   },
   computed: {
+    anos() {
+      const anoAtual = new Date().getFullYear()
+      const anos = []
+      for (let i = anoAtual; i >= 2020; i--) {
+        anos.push(i)
+      }
+      return anos
+    },
+    resultadosFiltrados() {
+      let resultados = this.todosResultados
+
+      // Filtro por Torneio ID
+      if (this.filtros.torneioId) {
+        resultados = resultados.filter(r => 
+          r.torneio?.id === parseInt(this.filtros.torneioId)
+        )
+      }
+
+      // Filtro por Mês
+      if (this.filtros.mes) {
+        resultados = resultados.filter(r => 
+          r.torneio?.mesRanking === parseInt(this.filtros.mes)
+        )
+      }
+
+      // Filtro por Ano
+      if (this.filtros.ano) {
+        resultados = resultados.filter(r => 
+          r.torneio?.anoRanking === parseInt(this.filtros.ano)
+        )
+      }
+
+      // Filtro por Ponto Bônus
+      if (this.filtros.pontoBonus) {
+        resultados = resultados.filter(r => 
+          r.pontoBonus === this.filtros.pontoBonus
+        )
+      }
+
+      return resultados
+    },
     resultadosList() {
       return this.resultados || []
     },
@@ -167,38 +260,6 @@ export default {
       }
       return paginas
     },
-    resultadosFiltrados() {
-      let resultado = this.todosResultados
-
-      if (!this.filtro.campo || !this.filtro.valor) {
-        return resultado
-      }
-
-      const valorFiltro = this.filtro.valor.toString().toLowerCase()
-      
-      return resultado.filter(resultado => {
-        if (this.filtro.campo === 'jogador') {
-          return resultado.jogador?.nomeReal?.toLowerCase().includes(valorFiltro)
-        }
-        
-        if (this.filtro.campo === 'torneio') {
-          return resultado.torneio?.toLowerCase().includes(valorFiltro)
-        }
-
-        if (this.filtro.campo === 'posicao') {
-          return resultado.posicao.toString() === valorFiltro
-        }
-
-        if (this.filtro.campo === 'totalPontosGanho') {
-          return resultado.totalPontosGanho.toString().includes(valorFiltro)
-        }
-        
-        const valorCampo = resultado[this.filtro.campo]
-        if (valorCampo === null || valorCampo === undefined) return false
-        
-        return valorCampo.toString().toLowerCase().includes(valorFiltro)
-      })
-    },
     obterPlaceholderFiltro() {
       const placeholders = {
         jogador: 'Digite o nome do jogador',
@@ -210,11 +271,19 @@ export default {
     }
   },
   watch: {
-    'filtro.campo'() {
+    'filtros.torneioId'() {
       this.paginaAtual = 1
       this.aplicarPaginacao()
     },
-    'filtro.valor'() {
+    'filtros.mes'() {
+      this.paginaAtual = 1
+      this.aplicarPaginacao()
+    },
+    'filtros.ano'() {
+      this.paginaAtual = 1
+      this.aplicarPaginacao()
+    },
+    'filtros.pontoBonus'() {
       this.paginaAtual = 1
       this.aplicarPaginacao()
     },
@@ -272,8 +341,10 @@ export default {
       }
     },
     limparFiltro() {
-      this.filtro.campo = ''
-      this.filtro.valor = ''
+      this.filtros.torneioId = ''
+      this.filtros.mes = ''
+      this.filtros.ano = ''
+      this.filtros.pontoBonus = ''
       this.paginaAtual = 1
       this.aplicarPaginacao()
     },
