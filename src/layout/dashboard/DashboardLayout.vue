@@ -2,8 +2,11 @@
   <div class="wrapper">
     <side-bar>
       <template slot="links">
-        <sidebar-link to="/dashboard" name="Dashboard" icon="ti-panel" />
-        <sidebar-link to="/icons" name="Icons" icon="ti-pencil-alt2" />
+        <sidebar-link
+          to="/ranking"
+          name="Ranking"
+          icon="ti-crown"
+        />
         <sidebar-link to="/player" name="Jogador" icon="ti-user" />
         <sidebar-link to="/tipos-torneio" name="Tipos de Torneio" icon="ti-uppercase" />
         <sidebar-link to="/torneios" name="Torneios" icon="ti-text" />
@@ -20,21 +23,8 @@
           name="Resultados do Torneio"
           icon="ti-cup"
         />
+        
       </template>
-      <mobile-menu>
-        <li class="nav-item">
-          <a class="nav-link">
-            <i class="ti-panel"></i>
-            <p>Dashboard</p>
-          </a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link">
-            <i class="ti-settings"></i>
-            <p>Configurações</p>
-          </a>
-        </li>
-      </mobile-menu>
     </side-bar>
     <div class="main-panel">
       <top-navbar></top-navbar>
