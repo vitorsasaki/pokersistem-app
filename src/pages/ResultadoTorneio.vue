@@ -6,9 +6,14 @@
           <template slot="header">
             <div class="d-flex justify-content-between align-items-center">
               <h4 class="card-title">Resultados do Torneio</h4>
-              <button class="btn btn-primary btn-sm" @click="abrirModalNovoResultado">
-                <i class="ti-plus"></i> Novo Resultado
-              </button>
+              <div>
+                <button class="btn btn-success btn-sm mr-2" @click="abrirModalLista">
+                  <i class="ti-list"></i> Nova Lista
+                </button>
+                <button class="btn btn-primary btn-sm" @click="abrirModalNovoResultado">
+                  <i class="ti-plus"></i> Novo Resultado
+                </button>
+              </div>
             </div>
           </template>
           
@@ -26,12 +31,28 @@
             <div class="row mb-4">
               <div class="col-md-3">
                 <div class="form-group">
-                  <label>Filtrar por Torneio ID</label>
-                  <input
-                    type="number"
-                    class="form-control"
-                    v-model="filtros.torneioId"
-                    placeholder="Digite o ID do torneio"
+                  <label>Jogador</label>
+                  <v-select
+                    v-model="filtros.jogador"
+                    :options="jogadores"
+                    :reduce="jogador => jogador"
+                    label="nome"
+                    :get-option-label="getJogadorLabel"
+                    placeholder="Digite para buscar jogador..."
+                    class="vue-select-custom"
+                    clearable
+                  />
+                </div>
+              </div>
+              <div class="col-md-3">
+                <div class="form-group">
+                  <label>Torneio</label>
+                  <v-select
+                    v-model="filtros.torneio"
+                    :options="torneios"
+                    :get-option-label="(option) => `ID: ${option.id} - ${formatarMesAno(option.mesRanking, option.anoRanking)}`"
+                    placeholder="Selecione um torneio"
+                    clearable
                   />
                 </div>
               </div>
@@ -40,7 +61,7 @@
                   <label>Mês</label>
                   <select class="form-control" v-model="filtros.mes">
                     <option value="">Todos</option>
-                    <option v-for="(mes, index) in nomesMeses" :key="index" :value="index + 1">
+                    <option v-for="(mes, index) in nomesMeses" :key="index + 1" :value="index + 1">
                       {{ mes }}
                     </option>
                   </select>
@@ -51,9 +72,7 @@
                   <label>Ano</label>
                   <select class="form-control" v-model="filtros.ano">
                     <option value="">Todos</option>
-                    <option v-for="ano in anos" :key="ano" :value="ano">
-                      {{ ano }}
-                    </option>
+                    <option v-for="ano in anos" :key="ano" :value="ano">{{ ano }}</option>
                   </select>
                 </div>
               </div>
@@ -66,6 +85,11 @@
                     <option value="NAO">Não</option>
                   </select>
                 </div>
+              </div>
+              <div class="col-md-3 d-flex align-items-end">
+                <button class="btn btn-secondary" @click="limparFiltros">
+                  Limpar Filtros
+                </button>
               </div>
             </div>
 
@@ -149,6 +173,13 @@
       @fechar="fecharModal"
       @salvar="salvarResultado"
     />
+
+    <!-- Modal de Lista de Resultados -->
+    <resultado-torneio-lista-modal
+      :show="showModalLista"
+      @fechar="fecharModalLista"
+      @salvar="carregarResultados"
+    />
   </div>
 </template>
 
@@ -156,17 +187,23 @@
 import Card from '@/components/Cards/Card.vue'
 import axios from '@/config/axios'
 import ResultadoTorneioModal from '@/components/Modals/ResultadoTorneioModal.vue'
+import ResultadoTorneioListaModal from '@/components/Modals/ResultadoTorneioListaModal.vue'
+import vSelect from 'vue-select'
+import 'vue-select/dist/vue-select.css'
 
 export default {
   components: {
     Card,
-    ResultadoTorneioModal
+    ResultadoTorneioModal,
+    ResultadoTorneioListaModal,
+    vSelect
   },
   data() {
     return {
       todosResultados: [],
       resultados: [],
       jogadores: [],
+      torneios: [],
       carregando: true,
       erro: null,
       paginaAtual: 1,
@@ -175,7 +212,8 @@ export default {
       showModal: false,
       resultadoSelecionado: null,
       filtros: {
-        torneioId: '',
+        jogador: null,
+        torneio: null,
         mes: '',
         ano: '',
         pontoBonus: ''
@@ -183,7 +221,8 @@ export default {
       nomesMeses: [
         'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
         'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
-      ]
+      ],
+      showModalLista: false
     }
   },
   computed: {
@@ -198,32 +237,24 @@ export default {
     resultadosFiltrados() {
       let resultados = this.todosResultados
 
-      // Filtro por Torneio ID
-      if (this.filtros.torneioId) {
-        resultados = resultados.filter(r => 
-          r.torneio?.id === parseInt(this.filtros.torneioId)
-        )
+      if (this.filtros.jogador) {
+        resultados = resultados.filter(r => r.jogador?.id === this.filtros.jogador.id)
       }
 
-      // Filtro por Mês
+      if (this.filtros.torneio) {
+        resultados = resultados.filter(r => r.torneio?.id === this.filtros.torneio.id)
+      }
+
       if (this.filtros.mes) {
-        resultados = resultados.filter(r => 
-          r.torneio?.mesRanking === parseInt(this.filtros.mes)
-        )
+        resultados = resultados.filter(r => r.torneio?.mesRanking === parseInt(this.filtros.mes))
       }
 
-      // Filtro por Ano
       if (this.filtros.ano) {
-        resultados = resultados.filter(r => 
-          r.torneio?.anoRanking === parseInt(this.filtros.ano)
-        )
+        resultados = resultados.filter(r => r.torneio?.anoRanking === parseInt(this.filtros.ano))
       }
 
-      // Filtro por Ponto Bônus
       if (this.filtros.pontoBonus) {
-        resultados = resultados.filter(r => 
-          r.pontoBonus === this.filtros.pontoBonus
-        )
+        resultados = resultados.filter(r => r.pontoBonus === this.filtros.pontoBonus)
       }
 
       return resultados
@@ -271,21 +302,12 @@ export default {
     }
   },
   watch: {
-    'filtros.torneioId'() {
-      this.paginaAtual = 1
-      this.aplicarPaginacao()
-    },
-    'filtros.mes'() {
-      this.paginaAtual = 1
-      this.aplicarPaginacao()
-    },
-    'filtros.ano'() {
-      this.paginaAtual = 1
-      this.aplicarPaginacao()
-    },
-    'filtros.pontoBonus'() {
-      this.paginaAtual = 1
-      this.aplicarPaginacao()
+    filtros: {
+      deep: true,
+      handler() {
+        this.paginaAtual = 1
+        this.aplicarPaginacao()
+      }
     },
     resultadosFiltrados() {
       this.totalItens = this.resultadosFiltrados.length
@@ -329,6 +351,16 @@ export default {
         this.jogadores = []
       }
     },
+    async carregarTorneios() {
+      try {
+        const response = await axios.get('/torneio')
+        this.torneios = response.data || []
+        this.torneios.sort((a, b) => b.id - a.id)
+      } catch (error) {
+        console.error('Erro ao carregar torneios:', error)
+        this.torneios = []
+      }
+    },
     aplicarPaginacao() {
       const inicio = (this.paginaAtual - 1) * this.itensPorPagina
       const fim = inicio + this.itensPorPagina
@@ -340,13 +372,14 @@ export default {
         this.aplicarPaginacao()
       }
     },
-    limparFiltro() {
-      this.filtros.torneioId = ''
-      this.filtros.mes = ''
-      this.filtros.ano = ''
-      this.filtros.pontoBonus = ''
-      this.paginaAtual = 1
-      this.aplicarPaginacao()
+    limparFiltros() {
+      this.filtros = {
+        jogador: null,
+        torneio: null,
+        mes: '',
+        ano: '',
+        pontoBonus: ''
+      }
     },
     async excluirResultado(resultado) {
       if (resultado && confirm(`Tem certeza que deseja excluir este resultado?`)) {
@@ -424,17 +457,23 @@ export default {
     },
     formatarMesAno(mes, ano) {
       if (!mes || !ano) return '-'
-      const nomesMeses = [
-        'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
-        'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
-      ]
-      return `${nomesMeses[parseInt(mes) - 1]}/${ano}`
+      return `${this.nomesMeses[parseInt(mes) - 1]}/${ano}`
+    },
+    getJogadorLabel(jogador) {
+      return `ID: ${jogador.id} - ${jogador.nome} (${jogador.nomeReal})`
+    },
+    abrirModalLista() {
+      this.showModalLista = true
+    },
+    fecharModalLista() {
+      this.showModalLista = false
     }
   },
   async mounted() {
     await Promise.all([
       this.carregarResultados(),
-      this.carregarJogadores()
+      this.carregarJogadores(),
+      this.carregarTorneios()
     ])
   }
 }
@@ -461,5 +500,41 @@ export default {
   pointer-events: none;
   background-color: #fff;
   border-color: #dee2e6;
+}
+
+/* Estilos do v-select */
+.v-select {
+  background-color: white;
+  border-radius: 4px;
+}
+
+.v-select .vs__dropdown-toggle {
+  padding: 4px 0;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.v-select .vs__selected {
+  margin: 0 2px;
+  padding: 0 0.25em;
+}
+
+.v-select .vs__search {
+  margin: 0;
+}
+
+.v-select .vs__dropdown-menu {
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  margin-top: 4px;
+}
+
+.v-select .vs__dropdown-option {
+  padding: 8px 20px;
+}
+
+.v-select .vs__dropdown-option--highlight {
+  background: #51cbce;
+  color: white;
 }
 </style> 

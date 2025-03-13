@@ -120,7 +120,6 @@ export default {
             this.resultado = { ...this.resultadoEdit }
           } else {
             this.limparFormulario()
-            await this.carregarUltimaPosicao()
           }
 
           await Promise.all([
@@ -132,6 +131,13 @@ export default {
           if (!this.resultadoEdit && this.torneios.length > 0) {
             this.resultado.torneio = this.torneios[0]
           }
+        }
+      }
+    },
+    'resultado.torneio': {
+      async handler(novoTorneio) {
+        if (novoTorneio && !this.resultadoEdit) {
+          await this.carregarUltimaPosicao()
         }
       }
     }
@@ -205,19 +211,24 @@ export default {
     async carregarUltimaPosicao() {
       try {
         const response = await axios.get('/resultadoTorneio')
-        if (response.data && Array.isArray(response.data)) {
-          const resultados = response.data
-          if (resultados.length > 0) {
-            // Encontra a maior posição entre todos os resultados
-            const maiorPosicao = Math.max(...resultados.map(r => r.posicao))
+        if (response.data) {
+          const resultados = Array.isArray(response.data) ? response.data : 
+                            (response.data.content || response.data.data || [])
+          
+          // Filtra apenas os resultados do torneio atual
+          const resultadosDoTorneioAtual = resultados.filter(r => r.torneio?.id === this.resultado.torneio?.id)
+          
+          if (resultadosDoTorneioAtual.length > 0) {
+            const maiorPosicao = Math.max(...resultadosDoTorneioAtual.map(r => r.posicao || 0))
             this.resultado.posicao = maiorPosicao + 1
           } else {
+            // Se não houver resultados para este torneio, começa do 1
             this.resultado.posicao = 1
           }
         }
       } catch (error) {
         console.error('Erro ao carregar última posição:', error)
-        this.resultado.posicao = 1
+        this.resultado.posicao = 1 // Em caso de erro, começa do 1
       }
     }
   }
