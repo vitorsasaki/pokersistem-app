@@ -6,6 +6,14 @@
           <template slot="header">
             <div class="d-flex justify-content-between align-items-center">
               <h4 class="card-title">Ranking de Jogadores</h4>
+              <button 
+                class="btn btn-primary btn-sm"
+                @click="exportarPDF"
+                :disabled="carregando || !rankingsFiltrados.length"
+              >
+                <i class="ti-file mr-1"></i>
+                Exportar PDF
+              </button>
             </div>
           </template>
           
@@ -60,7 +68,9 @@
               <table class="table">
                 <thead>
                   <tr>
+                    <th>Posição</th>
                     <th>Mês/Ano</th>
+                    <th>Nick</th>
                     <th>Jogador</th>
                     <th>Pontos</th>
                     <th>1º Lugares</th>
@@ -68,8 +78,10 @@
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="ranking in rankingList" :key="ranking.id">
+                  <tr v-for="(ranking, index) in rankingList" :key="index">
+                    <td>{{ (paginaAtual - 1) * itensPorPagina + index + 1 }}º</td>
                     <td>{{ formatarMesAno(ranking.mes, ranking.ano) }}</td>
+                    <td>{{ ranking.jogador?.nome || '-' }}</td>
                     <td>{{ ranking.jogador?.nomeReal || '-' }}</td>
                     <td>{{ ranking.pontos }}</td>
                     <td>{{ ranking.qtdPrimeiroLugar }}</td>
@@ -283,6 +295,95 @@ export default {
     formatarMesAno(mes, ano) {
       if (!mes || !ano) return '-'
       return `${this.nomesMeses[parseInt(mes) - 1]}/${ano}`
+    },
+    async exportarPDF() {
+      try {
+        // Importação dinâmica dos módulos
+        const jsPDF = (await import('jspdf')).default
+        await import('jspdf-autotable')
+        
+        const doc = new jsPDF()
+        
+        // Configuração do cabeçalho
+        doc.setFontSize(16)
+        doc.text('Ranking de Jogadores', 14, 15)
+        
+        // Adiciona filtros aplicados
+        doc.setFontSize(10)
+        let filtrosTexto = 'Filtros aplicados: '
+        if (this.filtros.mes) filtrosTexto += `Mês: ${this.nomesMeses[this.filtros.mes - 1]}, `
+        if (this.filtros.ano) filtrosTexto += `Ano: ${this.filtros.ano}, `
+        if (this.filtros.jogador) filtrosTexto += `Jogador: ${this.filtros.jogador}, `
+        if (filtrosTexto !== 'Filtros aplicados: ') {
+          doc.text(filtrosTexto.slice(0, -2), 14, 25)
+        }
+
+        // Configuração da tabela
+        const headers = [
+          ['Posição', 'Mês/Ano', 'Nick', 'Jogador', 'Pontos', '1º Lugares', 'Participações']
+        ]
+
+        // Dados da tabela
+        const dados = this.rankingsFiltrados.map((ranking, index) => [
+          `${index + 1}º`,
+          this.formatarMesAno(ranking.mes, ranking.ano),
+          ranking.jogador?.nome || '-',
+          ranking.jogador?.nomeReal || '-',
+          ranking.pontos.toString(),
+          ranking.qtdPrimeiroLugar.toString(),
+          ranking.numParticipacao.toString()
+        ])
+
+        // Gera a tabela
+        doc.autoTable({
+          startY: 30,
+          head: headers,
+          body: dados,
+          theme: 'grid',
+          styles: {
+            fontSize: 8,
+            cellPadding: 2,
+            overflow: 'linebreak',
+            halign: 'center'
+          },
+          headStyles: {
+            fillColor: [81, 203, 206],
+            textColor: [255, 255, 255],
+            fontStyle: 'bold'
+          },
+          columnStyles: {
+            0: { cellWidth: 15 },  // Posição
+            1: { cellWidth: 25 },  // Mês/Ano
+            2: { cellWidth: 35 },  // Nick
+            3: { cellWidth: 45 },  // Jogador
+            4: { cellWidth: 20 },  // Pontos
+            5: { cellWidth: 20 },  // 1º Lugares
+            6: { cellWidth: 20 }   // Participações
+          },
+          // Destaca as três primeiras posições
+          didParseCell: function(data) {
+            if (data.row.index < 3 && data.section === 'body') {
+              data.cell.styles.fillColor = [255, 255, 150]; // Amarelo claro
+              data.cell.styles.textColor = [0, 0, 0]; // Texto preto
+              data.cell.styles.fontStyle = 'bold';
+            }
+          }
+        })
+
+        // Adiciona rodapé com data de geração
+        const dataGeracao = new Date().toLocaleString('pt-BR')
+        doc.setFontSize(8)
+        doc.text(`Gerado em: ${dataGeracao}`, 14, doc.internal.pageSize.height - 10)
+
+        // Salva o PDF
+        doc.save('ranking-jogadores.pdf')
+      } catch (error) {
+        console.error('Erro ao gerar PDF:', error)
+        this.$notify({
+          message: 'Erro ao gerar o PDF. Tente novamente.',
+          type: 'danger'
+        })
+      }
     }
   },
   mounted() {
@@ -312,5 +413,10 @@ export default {
   pointer-events: none;
   background-color: #fff;
   border-color: #dee2e6;
+}
+
+/* Estilo para o ícone no botão */
+.ti-file {
+  font-size: 12px;
 }
 </style> 

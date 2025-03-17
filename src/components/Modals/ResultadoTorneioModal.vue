@@ -97,7 +97,8 @@ export default {
         jogador: null,
         torneio: null,
         posicao: null,
-        pontoBonus: false
+        pontoBonus: false,
+        atualizado: false
       },
       jogadores: [],
       torneios: []
@@ -192,7 +193,8 @@ export default {
           jogador: this.resultado.jogador,
           torneio: this.resultado.torneio,
           posicao: this.resultado.posicao,
-          pontoBonus: this.resultado.pontoBonus ? 'SIM' : 'NAO'
+          pontoBonus: this.resultado.pontoBonus ? 'SIM' : 'NAO',
+          atualizado: this.resultado.atualizado ? 'NAO' : 'SIM'
         }
 
         // Se estiver editando, inclui o ID

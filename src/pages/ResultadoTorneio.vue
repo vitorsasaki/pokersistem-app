@@ -7,11 +7,27 @@
             <div class="d-flex justify-content-between align-items-center">
               <h4 class="card-title">Resultados do Torneio</h4>
               <div>
-                <button class="btn btn-success btn-sm mr-2" @click="abrirModalLista">
-                  <i class="ti-list"></i> Nova Lista
+                <button 
+                  class="btn btn-success btn-sm mr-2"
+                  @click="atualizarRanking"
+                  :disabled="atualizandoRanking"
+                >
+                  <i class="ti-reload mr-1" :class="{ 'fa-spin': atualizandoRanking }"></i>
+                  Atualizar Ranking
                 </button>
-                <button class="btn btn-primary btn-sm" @click="abrirModalNovoResultado">
-                  <i class="ti-plus"></i> Novo Resultado
+                <button 
+                  class="btn btn-primary btn-sm mr-2"
+                  @click="abrirModalLista"
+                >
+                  <i class="ti-list mr-1"></i>
+                  Nova Lista
+                </button>
+                <button 
+                  class="btn btn-primary btn-sm"
+                  @click="abrirModalNovoResultado"
+                >
+                  <i class="ti-plus mr-1"></i>
+                  Novo Resultado
                 </button>
               </div>
             </div>
@@ -98,22 +114,26 @@
                 <thead>
                   <tr>
                     <th>Posição</th>
+                    <th>Nick</th>
                     <th>Jogador</th>
                     <th>Torneio ID</th>
                     <th>Mês/Ano</th>                    
                     <th>Total de Pontos</th>
                     <th>Ponto Bônus</th>
+                    <th>Atualizado</th>
                     <th>Ações</th>
                   </tr>
                 </thead>
                 <tbody>
                   <tr v-for="resultado in resultadosList" :key="resultado.id">
                     <td>{{ resultado.posicao }}</td>
+                    <td>{{ resultado.jogador?.nome || '-' }}</td>
                     <td>{{ resultado.jogador?.nomeReal || '-' }}</td>
                     <td>{{ resultado.torneio?.id || '-' }}</td>
                     <td>{{ formatarMesAno(resultado.torneio?.mesRanking, resultado.torneio?.anoRanking) }}</td>                    
                     <td>{{ resultado.totalPontosGanho }}</td>
                     <td>{{ resultado.pontoBonus === 'SIM' ? 'Sim' : 'Não' }}</td>
+                    <td>{{ resultado.atualizado === 'SIM' ? 'Sim' : 'Não' }}</td>
                     <td>
                       <button class="btn btn-info btn-sm mr-2" @click="editarResultado(resultado)" title="Editar">
                         <i class="ti-pencil"></i>
@@ -222,7 +242,8 @@ export default {
         'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
         'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
       ],
-      showModalLista: false
+      showModalLista: false,
+      atualizandoRanking: false
     }
   },
   computed: {
@@ -467,6 +488,40 @@ export default {
     },
     fecharModalLista() {
       this.showModalLista = false
+    },
+    async atualizarRanking() {
+      try {
+        this.atualizandoRanking = true
+        
+        // Busca resultados não atualizados
+        const responseNaoAtualizados = await axios.get('/resultadoTorneio/naoAtualizados')
+        const resultadosNaoAtualizados = responseNaoAtualizados.data
+        
+        if (!resultadosNaoAtualizados || resultadosNaoAtualizados.length === 0) {
+          this.$notify({
+            message: 'Não há resultados pendentes para atualizar no ranking.',
+            type: 'info'
+          })
+          return
+        }
+
+        // Envia resultados para atualizar o ranking
+        await axios.post('/ranking', resultadosNaoAtualizados)
+        
+        this.$notify({
+          message: `Ranking atualizado com sucesso! ${resultadosNaoAtualizados.length} resultados processados.`,
+          type: 'success'
+        })
+
+      } catch (error) {
+        console.error('Erro ao atualizar ranking:', error)
+        this.$notify({
+          message: `Erro ao atualizar ranking: ${error.response?.data?.message || error.message}`,
+          type: 'danger'
+        })
+      } finally {
+        this.atualizandoRanking = false
+      }
     }
   },
   async mounted() {
@@ -536,5 +591,18 @@ export default {
 .v-select .vs__dropdown-option--highlight {
   background: #51cbce;
   color: white;
+}
+
+.ti-reload {
+  transition: transform 0.5s ease;
+}
+
+.ti-reload.fa-spin {
+  animation: fa-spin 2s infinite linear;
+}
+
+@keyframes fa-spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 </style> 
