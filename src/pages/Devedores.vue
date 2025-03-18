@@ -6,9 +6,14 @@
           <template slot="header">
             <div class="d-flex justify-content-between align-items-center">
               <h4 class="card-title">Devedores</h4>
-              <button class="btn btn-primary btn-sm" @click="abrirModalNovoLancamento">
-                <i class="ti-plus"></i> Novo Lançamento
-              </button>
+              <div>
+                <button class="btn btn-success btn-sm mr-2" @click="exportarDevedores">
+                  <i class="ti-download"></i> Exportar
+                </button>
+                <button class="btn btn-primary btn-sm" @click="abrirModalNovoLancamento">
+                  <i class="ti-plus"></i> Novo Lançamento
+                </button>
+              </div>
             </div>
           </template>
           
@@ -169,6 +174,8 @@
 import Card from '@/components/Cards/Card.vue'
 import axios from '@/config/axios'
 import LancamentoModal from '@/components/Modals/LancamentoModal.vue'
+import jsPDF from 'jspdf'
+import 'jspdf-autotable'
 
 export default {
   components: {
@@ -434,6 +441,85 @@ export default {
       dataComHora.setHours(23, 59, 0)
       this.filtro.dataFinal = dataComHora.toISOString().slice(0, 16)
       this.aplicarPaginacao()
+    },
+    async exportarDevedores() {
+      try {
+        // Filtra apenas os devedores (valor > 0)
+        const devedoresParaExportar = this.todosDevedores
+          .filter(devedor => devedor.valor > 0)
+          .map(devedor => [
+            devedor.id,
+            devedor.jogador?.nome || '-',
+            devedor.jogador?.nomeReal || '-',
+            this.formatarMoeda(devedor.valor),
+            this.formatarDataHora(devedor.dataUltimaAtualizacao)
+          ]);
+
+        // Cria o documento PDF
+        const doc = new jsPDF('p', 'pt', 'a4');
+        
+        // Adiciona o título
+        doc.setFontSize(16);
+        doc.text('Lista de Devedores', 40, 40);
+        doc.setFontSize(10);
+        doc.text(`Data de geração: ${new Date().toLocaleDateString('pt-BR')}`, 40, 60);
+
+        // Adiciona a tabela
+        doc.autoTable({
+          head: [['ID', 'Jogador', 'Nome Real', 'Valor', 'Última Atualização']],
+          body: devedoresParaExportar,
+          startY: 80,
+          theme: 'grid',
+          styles: {
+            fontSize: 8,
+            cellPadding: 5,
+            overflow: 'linebreak'
+          },
+          headStyles: {
+            fillColor: [107, 208, 152], // Cor verde do botão
+            textColor: 255,
+            fontSize: 9,
+            fontStyle: 'bold'
+          },
+          alternateRowStyles: {
+            fillColor: [245, 245, 245]
+          },
+          columnStyles: {
+            0: { cellWidth: 40 },  // ID
+            1: { cellWidth: 100 }, // Jogador
+            2: { cellWidth: 100 }, // Nome Real
+            3: { cellWidth: 80 },  // Valor
+            4: { cellWidth: 120 }  // Última Atualização
+          }
+        });
+
+        // Adiciona o rodapé
+        const pageCount = doc.internal.getNumberOfPages();
+        for (let i = 1; i <= pageCount; i++) {
+          doc.setPage(i);
+          doc.setFontSize(8);
+          doc.text(
+            `Página ${i} de ${pageCount}`,
+            doc.internal.pageSize.width / 2,
+            doc.internal.pageSize.height - 20,
+            { align: 'center' }
+          );
+        }
+
+        // Faz o download do PDF
+        doc.save(`devedores_${new Date().toISOString().split('T')[0]}.pdf`);
+
+        this.$notify({
+          message: 'Lista de devedores exportada com sucesso!',
+          type: 'success'
+        });
+      } catch (error) {
+        console.error('Erro ao exportar devedores:', error);
+        this.$notify({
+          message: 'Erro ao exportar lista de devedores. Por favor, tente novamente.',
+          type: 'danger'
+        });
+      }
     }
   },
   mounted() {
@@ -480,5 +566,19 @@ export default {
   pointer-events: none;
   background-color: #fff;
   border-color: #dee2e6;
+}
+
+.btn-success {
+  background-color: #6bd098;
+  border-color: #6bd098;
+}
+
+.btn-success:hover {
+  background-color: #5abf87;
+  border-color: #5abf87;
+}
+
+.mr-2 {
+  margin-right: 0.5rem;
 }
 </style> 

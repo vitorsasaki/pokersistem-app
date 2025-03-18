@@ -100,7 +100,7 @@
             <tbody>
               <tr v-for="(item, index) in listaResultados" :key="index">
                 <td>{{ item.posicao }}</td>
-                <td>{{ item.jogador.nomeReal }}</td>
+                <td>{{ item.jogador.nome }}</td>
                 <td>
                   <div class="custom-control custom-switch">
                     <input

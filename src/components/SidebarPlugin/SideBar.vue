@@ -104,6 +104,7 @@ export default {
       isWindows: false,
       hasAutoHeight: false,
       links: [],
+      showSidebar: false,
     };
   },
   methods: {
@@ -124,6 +125,28 @@ export default {
         this.links.splice(index, 1);
       }
     },
+    displaySidebar(value) {
+      this.showSidebar = value;
+      this.$emit('update:showSidebar', value);
+    },
+    toggleSidebar() {
+      this.displaySidebar(!this.showSidebar);
+    },
+    hideSidebar() {
+      this.displaySidebar(false);
+    },
+    showSidebar() {
+      this.displaySidebar(true);
+    }
+  },
+  watch: {
+    showSidebar(value) {
+      if (value) {
+        document.body.classList.add('nav-open');
+      } else {
+        document.body.classList.remove('nav-open');
+      }
+    }
   },
   mounted() {
     this.$watch("$route", this.findActiveLink, {

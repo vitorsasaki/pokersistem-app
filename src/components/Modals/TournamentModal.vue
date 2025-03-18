@@ -306,6 +306,8 @@ export default {
       // Formata a data para o formato esperado pela API (YYYY-MM-DD)
       if (torneioParaSalvar.dataTorneio) {
         const data = new Date(torneioParaSalvar.dataTorneio)
+        const diasParaAdicionar = 1;
+        data.setDate(data.getDate() + diasParaAdicionar);
         torneioParaSalvar.dataTorneio = data.toISOString().split('T')[0]
       }
 

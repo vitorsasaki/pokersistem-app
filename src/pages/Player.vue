@@ -138,7 +138,7 @@
 <script>
 import Card from '@/components/Cards/Card.vue'
 import PlayerModal from '@/components/Modals/PlayerModal.vue'
-import axios from 'axios'
+import axios from '@/config/axios'
 
 export default {
   components: {
@@ -255,7 +255,7 @@ export default {
       try {
         this.carregando = true
         this.erro = null
-        const response = await axios.get('/pokersistem/jogadores')
+        const response = await axios.get('/jogadores')
         
         if (response.data) {
           this.todosJogadores = Array.isArray(response.data) ? response.data : 
@@ -304,14 +304,14 @@ export default {
         console.log('Dados a serem enviados:', jogador)
         
         if (jogador.id) {
-          const response = await axios.put(`/pokersistem/jogadores/${jogador.id}`, jogador)
+          const response = await axios.put(`/jogadores/${jogador.id}`, jogador)
           console.log('Resposta da API (PUT):', response.data)
           this.$notify({
             message: 'Jogador atualizado com sucesso!',
             type: 'success'
           })
         } else {
-          const response = await axios.post('/pokersistem/jogadores', jogador)
+          const response = await axios.post('/jogadores', jogador)
           console.log('Resposta da API (POST):', response.data)
           this.$notify({
             message: 'Jogador criado com sucesso!',
@@ -330,7 +330,7 @@ export default {
     async excluirJogador(jogador) {
       if (jogador && confirm(`Tem certeza que deseja excluir o jogador ${jogador.nome}?`)) {
         try {
-          await axios.delete(`/pokersistem/jogadores/${jogador.id}`)
+          await axios.delete(`/jogadores/${jogador.id}`)
           await this.carregarJogadores()
           if (this.jogadores.length === 0 && this.paginaAtual > 1) {
             this.paginaAtual--

@@ -1,15 +1,31 @@
 <template>
-  <div :class="{ 'nav-open': $sidebar.showSidebar }">
+  <div id="app">
     <notifications></notifications>
     <router-view></router-view>
   </div>
 </template>
 
 <script>
-export default {};
+export default {
+  name: 'App'
+}
 </script>
 
-<style lang="scss">
+<style>
+#app {
+  font-family: 'Muli', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  height: 100vh;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  height: 100vh;
+}
+
+/* Estilos para as notificações */
 .vue-notifyjs.notifications {
   .alert {
     z-index: 10000;
