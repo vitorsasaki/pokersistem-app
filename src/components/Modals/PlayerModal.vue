@@ -93,6 +93,16 @@
                 <option value="TO">Tocantins</option>
               </select>
             </div>
+            <div class="form-group">
+              <label>Celular</label>
+              <input
+                type="celular"
+                class="form-control"
+                v-model="jogador.celular"
+                required
+                placeholder="Celular do jogador"
+              />
+            </div>
           </form>
         </div>
         <div class="modal-footer">
@@ -130,7 +140,8 @@ export default {
         estado: '',
         idpp: '',
         login: '',
-        senha: ''
+        senha: '',
+        celular: ''
       }
     }
   },
@@ -141,7 +152,8 @@ export default {
         this.jogador = { 
           ...this.jogador,
           ...dadosJogador,
-          senha: ''
+          senha: '',
+          celular: ''
         }
       } else {
         this.limparFormulario()
@@ -170,7 +182,8 @@ export default {
         estado: '',
         idpp: '',
         login: '',
-        senha: ''
+        senha: '',
+        celular: ''
       }
     }
   }

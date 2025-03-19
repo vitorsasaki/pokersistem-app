@@ -7,6 +7,13 @@
             <div class="d-flex justify-content-between align-items-center">
               <h4 class="card-title">Devedores</h4>
               <div>
+                <button 
+                  class="btn btn-success btn-sm mr-2" 
+                  @click="enviarMensagensEmLote"
+                  :disabled="!devedoresSelecionados.length"
+                >
+                  <i class="fab fa-whatsapp"></i> Enviar em Lote
+                </button>
                 <button class="btn btn-success btn-sm mr-2" @click="exportarDevedores">
                   <i class="ti-download"></i> Exportar
                 </button>
@@ -102,20 +109,55 @@
               <table class="table">
                 <thead>
                   <tr>
+                    <th>
+                      <div class="custom-control custom-checkbox">
+                        <input 
+                          type="checkbox" 
+                          class="custom-control-input" 
+                          id="selecionarTodos"
+                          v-model="todosDevedoresSelecionados"
+                          @change="selecionarTodosDevedores"
+                        >
+                        <label class="custom-control-label" for="selecionarTodos"></label>
+                      </div>
+                    </th>
                     <th>ID</th>
                     <th>Jogador</th>
                     <th>Nome Real</th>
                     <th>Valor</th>                
                     <th>Última Atualização</th>
+                    <th>Ações</th>
                   </tr>
                 </thead>
                 <tbody>
                   <tr v-for="devedor in devedoresList" :key="devedor.id">
+                    <td>
+                      <div class="custom-control custom-checkbox">
+                        <input 
+                          type="checkbox" 
+                          class="custom-control-input" 
+                          :id="'devedor' + devedor.id"
+                          v-model="devedor.selecionado"
+                          :disabled="!devedor.jogador?.celular"
+                        >
+                        <label class="custom-control-label" :for="'devedor' + devedor.id"></label>
+                      </div>
+                    </td>
                     <td>{{ devedor.id }}</td>
                     <td>{{ devedor.jogador?.nome || '-' }}</td>
                     <td>{{ devedor.jogador?.nomeReal || '-' }}</td>
                     <td>{{ formatarMoeda(devedor.valor) }}</td>                  
                     <td>{{ formatarDataHora(devedor.dataUltimaAtualizacao) }}</td>
+                    <td>
+                      <button 
+                        v-if="devedor.jogador?.celular"
+                        class="btn btn-success btn-sm mr-2" 
+                        @click="enviarMensagemWhatsApp(devedor)"
+                        title="Enviar WhatsApp"
+                      >
+                        <i class="fab fa-whatsapp"></i>
+                      </button>
+                    </td>
                   </tr>
                   <tr v-if="!devedoresList.length">
                     <td colspan="5" class="text-center">Nenhum devedor encontrado</td>
@@ -199,7 +241,8 @@ export default {
       },
       showModal: false,
       lancamentoSelecionado: null,
-      mostrarApenasDevedores: false
+      mostrarApenasDevedores: false,
+      todosDevedoresSelecionados: false
     }
   },
   computed: {
@@ -306,6 +349,9 @@ export default {
         dataUltimaAtualizacao: 'Digite a data (dd/mm/aaaa hh:mm:ss)'
       }
       return this.filtro.campo ? placeholders[this.filtro.campo] : 'Selecione um campo para filtrar'
+    },
+    devedoresSelecionados() {
+      return this.devedoresList.filter(d => d.selecionado && d.jogador?.celular)
     }
   },
   watch: {
@@ -520,6 +566,54 @@ export default {
           type: 'danger'
         });
       }
+    },
+    enviarMensagemWhatsApp(devedor) {
+      // Remove caracteres não numéricos do celular
+      const celular = devedor.jogador.celular.replace(/\D/g, '');
+      
+      // Monta a mensagem
+      const mensagem = encodeURIComponent(
+        `Olá ${devedor.jogador.nomeReal}, \n` +
+        `Gostaria de lembrar que você tem um débito pendente no valor de ${this.formatarMoeda(devedor.valor)}. \n` +
+        `Por favor, se puder enviar no pix 96168168191.`
+      );
+
+      // Cria o link do WhatsApp
+      const url = `https://wa.me/55${celular}?text=${mensagem}`;
+
+      // Abre em uma nova aba
+      window.open(url, '_blank');
+    },
+    selecionarTodosDevedores() {
+      this.devedoresList.forEach(devedor => {
+        if (devedor.jogador?.celular) {
+          devedor.selecionado = this.todosDevedoresSelecionados
+        }
+      })
+    },
+    async enviarMensagensEmLote() {
+      const devedores = this.devedoresSelecionados
+      
+      if (devedores.length === 0) {
+        this.$notify({
+          message: 'Selecione pelo menos um devedor com celular cadastrado.',
+          type: 'warning'
+        })
+        return
+      }
+
+      // Abre as mensagens em sequência com um pequeno delay
+      for (let i = 0; i < devedores.length; i++) {
+        const devedor = devedores[i]
+        setTimeout(() => {
+          this.enviarMensagemWhatsApp(devedor)
+        }, i * 1000) // Delay de 1 segundo entre cada mensagem
+      }
+
+      this.$notify({
+        message: `Iniciando envio de ${devedores.length} mensagens...`,
+        type: 'success'
+      })
     }
   },
   mounted() {
@@ -569,16 +663,30 @@ export default {
 }
 
 .btn-success {
-  background-color: #6bd098;
-  border-color: #6bd098;
+  background-color: #25d366; /* Cor do WhatsApp */
+  border-color: #25d366;
 }
 
 .btn-success:hover {
-  background-color: #5abf87;
-  border-color: #5abf87;
+  background-color: #128c7e;
+  border-color: #128c7e;
+}
+
+.fa-whatsapp {
+  font-size: 1.1em;
 }
 
 .mr-2 {
   margin-right: 0.5rem;
+}
+
+.custom-control-input:disabled ~ .custom-control-label::before {
+  background-color: #e9ecef;
+  border-color: #dee2e6;
+}
+
+.btn-success:disabled {
+  background-color: #93e6b3;
+  border-color: #93e6b3;
 }
 </style> 

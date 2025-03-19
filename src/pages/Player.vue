@@ -65,6 +65,7 @@
                   <th>Nome</th>
                   <th>Nome Real</th>
                   <th>Estado</th>
+                  <th>Celular</th>
                   <th>Ações</th>
                 </tr>
               </thead>
@@ -74,7 +75,7 @@
                   <td>{{ jogador.nome }}</td>
                   <td>{{ jogador.nomeReal }}</td>
                   <td>{{ jogador.estado }}</td>
-                  <td>
+                  <td>{{ jogador.celular }}</td>
                     <button class="btn btn-info btn-sm mr-2" @click="editarJogador(jogador)">
                       <i class="ti-pencil"></i>
                     </button>
