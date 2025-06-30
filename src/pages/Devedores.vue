@@ -573,8 +573,8 @@ export default {
       
       // Monta a mensagem
       const mensagem = encodeURIComponent(
-        `Olá ${devedor.jogador.nomeReal}, \n` +
-        `Gostaria de lembrar que você tem um débito pendente no valor de ${this.formatarMoeda(devedor.valor)}. \n` +
+        `E ai ${devedor.jogador.nomeReal} blz?, \n` +
+        `Consegue me mandar o valor em aberto de ${this.formatarMoeda(devedor.valor)}. \n` +
         `Por favor, se puder enviar no pix 96261668191`
       );
 
