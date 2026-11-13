@@ -33,7 +33,7 @@
                     <option value="nome">Nome</option>
                     <option value="nomeReal">Nome Real</option>
                     <option value="estado">Estado</option>
-                    <option value="idpp">IDPP</option>
+                    <option value="idPP">IDPP</option>
                     <option value="login">Login</option>
                   </select>
                 </div>
@@ -211,7 +211,7 @@ export default {
         if (valorCampo === null || valorCampo === undefined) return false
         
         // Para ID e IDPP, faz uma comparação exata
-        if (this.filtro.campo === 'id' || this.filtro.campo === 'idpp') {
+        if (this.filtro.campo === 'id' || this.filtro.campo === 'idPP') {
           return valorCampo.toString() === valorFiltro
         }
         
@@ -230,7 +230,7 @@ export default {
         nome: 'Digite o nome do jogador',
         nomeReal: 'Digite o nome real do jogador',
         estado: 'Digite a sigla do estado (ex: SP)',
-        idpp: 'Digite o IDPP do jogador',
+        idPP: 'Digite o IDPP do jogador',
         login: 'Digite o login do jogador'
       }
       return this.filtro.campo ? placeholders[this.filtro.campo] : 'Selecione um campo para filtrar'

@@ -6,9 +6,22 @@
           <template slot="header">
             <div class="d-flex justify-content-between align-items-center">
               <h4 class="card-title">Lançamentos</h4>
-              <button class="btn btn-primary btn-sm" @click="abrirModalNovoLancamento">
-                <i class="ti-plus"></i> Novo Lançamento
-              </button>
+              <div>
+                <button
+                  class="btn btn-warning btn-sm mr-2"
+                  @click="abrirModalExecutarSelecionados"
+                  :disabled="!idsSelecionados.length || executandoSelecionados"
+                >
+                  <i class="ti-check-box"></i> Executar Selecionados
+                  <span v-if="idsSelecionados.length">({{ idsSelecionados.length }})</span>
+                </button>
+                <button class="btn btn-info btn-sm mr-2" @click="abrirModalImportar">
+                  <i class="ti-import"></i> Importar Lançamentos
+                </button>
+                <button class="btn btn-primary btn-sm" @click="abrirModalNovoLancamento">
+                  <i class="ti-plus"></i> Novo Lançamento
+                </button>
+              </div>
             </div>
           </template>
           
@@ -85,6 +98,19 @@
               <table class="table">
                 <thead>
                   <tr>
+                    <th>
+                      <div class="custom-control custom-checkbox">
+                        <input
+                          type="checkbox"
+                          class="custom-control-input"
+                          id="selecionarTodosLancamentos"
+                          :checked="todosDaPaginaSelecionados"
+                          :indeterminate.prop="algunsDaPaginaSelecionados"
+                          @change="selecionarTodosDaPagina"
+                        >
+                        <label class="custom-control-label" for="selecionarTodosLancamentos"></label>
+                      </div>
+                    </th>
                     <th>ID</th>
                     <th>Jogador</th>
                     <th>Nome Real</th>
@@ -96,6 +122,18 @@
                 </thead>
                 <tbody>
                   <tr v-for="lancamento in lancamentosList" :key="lancamento.id">
+                    <td>
+                      <div class="custom-control custom-checkbox">
+                        <input
+                          type="checkbox"
+                          class="custom-control-input"
+                          :id="'lancamento' + lancamento.id"
+                          :checked="idsSelecionados.includes(lancamento.id)"
+                          @change="alternarSelecao(lancamento.id)"
+                        >
+                        <label class="custom-control-label" :for="'lancamento' + lancamento.id"></label>
+                      </div>
+                    </td>
                     <td>{{ lancamento.id }}</td>
                     <td>{{ lancamento.jogador?.nome || '-' }}</td>
                     <td>{{ lancamento.jogador?.nomeReal || '-' }}</td>
@@ -112,7 +150,7 @@
                     </td>
                   </tr>
                   <tr v-if="!lancamentosList.length">
-                    <td colspan="7" class="text-center">Nenhum lançamento encontrado</td>
+                    <td colspan="8" class="text-center">Nenhum lançamento encontrado</td>
                   </tr>
                 </tbody>
               </table>
@@ -161,6 +199,20 @@
       @fechar="fecharModal"
       @salvar="salvarLancamento"
     />
+
+    <importar-lancamentos-modal
+      :show="showModalImportar"
+      @fechar="fecharModalImportar"
+      @importado="onImportacaoConcluida"
+    />
+
+    <executar-selecionados-modal
+      :show="showModalExecutar"
+      :quantidade="idsSelecionados.length"
+      :executando="executandoSelecionados"
+      @fechar="fecharModalExecutar"
+      @confirmar="executarSelecionados"
+    />
   </div>
 </template>
 
@@ -168,11 +220,15 @@
 import Card from '@/components/Cards/Card.vue'
 import axios from '@/config/axios'
 import LancamentoModal from '@/components/Modals/LancamentoModal.vue'
+import ImportarLancamentosModal from '@/components/Modals/ImportarLancamentosModal.vue'
+import ExecutarSelecionadosModal from '@/components/Modals/ExecutarSelecionadosModal.vue'
 
 export default {
   components: {
     Card,
-    LancamentoModal
+    LancamentoModal,
+    ImportarLancamentosModal,
+    ExecutarSelecionadosModal
   },
   data() {
     return {
@@ -184,14 +240,18 @@ export default {
       itensPorPagina: 10,
       totalItens: 0,
       filtro: {
-        campo: 'nomeReal',
-        valor: '',
+        campo: 'tipoLancamento',
+        valor: 'Aprovar',
         dataInicial: '',
         dataFinal: ''
       },
       showModal: false,
+      showModalImportar: false,
+      showModalExecutar: false,
       lancamentoSelecionado: null,
-      mostrarApenasDevedores: false
+      mostrarApenasDevedores: false,
+      idsSelecionados: [],
+      executandoSelecionados: false
     }
   },
   computed: {
@@ -305,6 +365,14 @@ export default {
         data: 'Digite a data (dd/mm/aaaa)'
       }
       return this.filtro.campo ? placeholders[this.filtro.campo] : 'Selecione um campo para filtrar'
+    },
+    todosDaPaginaSelecionados() {
+      return this.lancamentosList.length > 0 &&
+        this.lancamentosList.every(l => this.idsSelecionados.includes(l.id))
+    },
+    algunsDaPaginaSelecionados() {
+      const selecionadosNaPagina = this.lancamentosList.filter(l => this.idsSelecionados.includes(l.id))
+      return selecionadosNaPagina.length > 0 && !this.todosDaPaginaSelecionados
     }
   },
   watch: {
@@ -332,6 +400,7 @@ export default {
           this.todosLancamentos = Array.isArray(response.data) ? response.data : 
                            (response.data.content || response.data.data || [])
           
+          this.idsSelecionados = []
           this.totalItens = this.todosLancamentos.length
           this.aplicarPaginacao()
         } else {
@@ -404,6 +473,80 @@ export default {
     abrirModalNovoLancamento() {
       this.lancamentoSelecionado = null
       this.showModal = true
+    },
+    abrirModalImportar() {
+      this.showModalImportar = true
+    },
+    fecharModalImportar() {
+      this.showModalImportar = false
+    },
+    async onImportacaoConcluida(resultado) {
+      if (resultado && resultado.importados > 0) {
+        await this.carregarLancamentos()
+      }
+    },
+    alternarSelecao(id) {
+      const index = this.idsSelecionados.indexOf(id)
+      if (index >= 0) {
+        this.idsSelecionados.splice(index, 1)
+      } else {
+        this.idsSelecionados.push(id)
+      }
+    },
+    selecionarTodosDaPagina(event) {
+      const marcar = event.target.checked
+      const idsPagina = this.lancamentosList.map(l => l.id)
+      if (marcar) {
+        idsPagina.forEach(id => {
+          if (!this.idsSelecionados.includes(id)) {
+            this.idsSelecionados.push(id)
+          }
+        })
+      } else {
+        this.idsSelecionados = this.idsSelecionados.filter(id => !idsPagina.includes(id))
+      }
+    },
+    abrirModalExecutarSelecionados() {
+      if (!this.idsSelecionados.length) {
+        this.$notify({
+          message: 'Selecione pelo menos um lançamento.',
+          type: 'warning'
+        })
+        return
+      }
+      this.showModalExecutar = true
+    },
+    fecharModalExecutar() {
+      this.showModalExecutar = false
+    },
+    async executarSelecionados(tipoLancamento) {
+      try {
+        this.executandoSelecionados = true
+        const response = await axios.post('/lancamentoDevedor/executar-selecionados', {
+          ids: this.idsSelecionados,
+          tipoLancamento
+        })
+
+        const atualizados = response.data?.atualizados || 0
+        const erros = response.data?.erros || 0
+
+        this.$notify({
+          message: `${atualizados} lançamento(s) atualizado(s)${erros ? `, ${erros} erro(s)` : ''}.`,
+          type: erros ? 'warning' : 'success'
+        })
+
+        this.showModalExecutar = false
+        this.idsSelecionados = []
+        await this.carregarLancamentos()
+      } catch (error) {
+        console.error('Erro ao executar selecionados:', error)
+        this.$notify({
+          message: error.response?.data?.message || 'Erro ao executar lançamentos selecionados.',
+          type: 'danger'
+        })
+      } finally {
+        this.executandoSelecionados = false
+      }
     },
     editarLancamento(lancamento) {
       this.lancamentoSelecionado = { ...lancamento }

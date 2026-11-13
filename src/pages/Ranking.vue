@@ -141,7 +141,6 @@ export default {
     Card
   },
   data() {
-    const dataAtual = new Date()
     return {
       todosRankings: [],
       rankings: [],
@@ -151,8 +150,8 @@ export default {
       itensPorPagina: 10,
       totalItens: 0,
       filtros: {
-        mes: dataAtual.getMonth() + 1,
-        ano: dataAtual.getFullYear(),
+        mes: new Date().getMonth() + 1,
+        ano: new Date().getFullYear(),
         jogador: ''
       },
       nomesMeses: [

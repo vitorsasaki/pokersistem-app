@@ -33,6 +33,9 @@
                 <option value="">Selecione o tipo</option>
                 <option value="DEVE">Deve</option>
                 <option value="ABATER">Abater</option>
+                <option value="APROVAR">Aprovar</option>
+                <option value="PAGO">Pago</option>
+                <option value="SAQUE">Saque</option>
               </select>
             </div>
           </div>

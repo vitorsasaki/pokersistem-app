@@ -35,7 +35,7 @@
               <input
                 type="text"
                 class="form-control"
-                v-model="jogador.idpp"
+                v-model="jogador.idPP"
                 required
                 placeholder="Identificador PP do jogador"
               />
@@ -138,7 +138,7 @@ export default {
         nome: '',
         nomeReal: '',
         estado: '',
-        idpp: '',
+        idPP: '',
         login: '',
         senha: '',
         celular: ''
@@ -166,11 +166,18 @@ export default {
       this.limparFormulario()
     },
     salvar() {
-      if (this.jogador.id && !this.jogador.senha) {
-        const { senha, ...dadosParaSalvar } = this.jogador
+      const dados = {
+        ...this.jogador,
+        idPP: this.jogador.idPP !== '' && this.jogador.idPP != null
+          ? Number(this.jogador.idPP)
+          : null
+      }
+
+      if (dados.id && !dados.senha) {
+        const { senha, ...dadosParaSalvar } = dados
         this.$emit('salvar', dadosParaSalvar)
       } else {
-        this.$emit('salvar', { ...this.jogador })
+        this.$emit('salvar', dados)
       }
       this.fechar()
     },
@@ -180,7 +187,7 @@ export default {
         nome: '',
         nomeReal: '',
         estado: '',
-        idpp: '',
+        idPP: '',
         login: '',
         senha: '',
         celular: ''
@@ -193,8 +200,51 @@ export default {
 <style scoped>
 .modal {
   background-color: rgba(0, 0, 0, 0.5);
+  overflow-y: auto;
 }
+
 .modal-dialog {
-  margin-top: 100px;
+  margin: 1.75rem auto;
+  max-width: 500px;
+  max-height: calc(100vh - 3.5rem);
+  display: flex;
+  flex-direction: column;
+}
+
+.modal-content {
+  max-height: calc(100vh - 3.5rem);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.modal-header,
+.modal-footer {
+  flex-shrink: 0;
+}
+
+.modal-body {
+  overflow-y: auto;
+  flex: 1 1 auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+@media (max-height: 700px) {
+  .modal-dialog {
+    margin: 0.5rem auto;
+    max-height: calc(100vh - 1rem);
+  }
+
+  .modal-content {
+    max-height: calc(100vh - 1rem);
+  }
+
+  .modal-body {
+    padding: 0.75rem 1rem;
+  }
+
+  .form-group {
+    margin-bottom: 0.75rem;
+  }
 }
 </style> 
